@@ -2,6 +2,7 @@ import os
 import json
 import random
 import datetime
+from datetime import datetime, time
 import discord
 import logging
 from discord import app_commands
@@ -18,6 +19,7 @@ load_dotenv()
 logs_folder = os.getenv("LOG_FOLDER")
 errors_folder = os.getenv("ERRORS_FOLDER")
 songs_folder = os.getenv("SONGS_FOLDER")
+episodes_folder = os.getenv("EPISODES_FOLDER")
 images_folder = os.getenv("IMAGES_FOLDER")
 authors_folder = os.getenv("AUTHORS_FOLDER")
 days_folder = os.getenv("DAYS_FOLDER")
@@ -37,7 +39,7 @@ day_template_file = os.getenv("DAY_TEMPLATES_FILE")
 quotes_file = os.getenv("QUOTES_FILE")
 blacklist_file = os.getenv("BLACKLIST_FILE")
 
-update_name: str = "\"I hate naming things\""
+update_name: str = os.getenv("UPDATE_NAME")
 
 # ───────────────────────────────
 # Logging setup
@@ -100,13 +102,13 @@ def get_todays_template() -> dict | tuple[discord.File, discord.Embed]:
 
    try:
       with open(day_templates_path) as day_template_list:
-         todays_index: int = datetime.datetime.now().weekday()
+         todays_index: int = datetime.now().weekday()
          week: list[dict] = json.load(day_template_list)
          week[todays_index]['color'] = int(week[todays_index]['color'], 16)
       return week[todays_index]
 
    except FileNotFoundError:
-      return error_handler("Súbor sa nenašiel",f"Skontroluj **{day_templates_path}**") 
+      return error_handler("Súbor sa nenašiel",f"Skontroluj **{day_template_file}**") 
 
 def get_songs(all_songs: list[dict], exclude: list[dict] | None = None) -> list[dict]:
    exclude = exclude or []
@@ -171,7 +173,7 @@ def select_quote() -> dict | tuple[discord.File, discord.Embed]:
       with open(quotes_path, 'r') as quotes_list:
          quotes: list[dict] = json.load(quotes_list)
    except FileNotFoundError:
-      return error_handler("Súbor sa nenašiel",f"Skontroluj **{quotes_path}**")
+      return error_handler("Súbor sa nenašiel",f"Skontroluj **{quotes_file}**")
 
    available_quotes: list[dict] = get_availabe_quotes(quotes)
 
@@ -192,7 +194,7 @@ def select_quote() -> dict | tuple[discord.File, discord.Embed]:
       with open(quotes_path, 'w') as quotes_list:
          json.dump(quotes, quotes_list)
    except FileNotFoundError:
-      return error_handler("Súbor sa nenašiel",f"Skontroluj **{quotes_path}**")
+      return error_handler("Súbor sa nenašiel",f"Skontroluj **{quotes_file}**")
 
    return chosen_quote
 
@@ -210,7 +212,7 @@ def create_song_list(songs_file: str) -> tuple[discord.File, discord.Embed]:
          with open(f"{blacklist_path}", "r") as ban_file:
             blacklist = json.load(ban_file)
       except FileNotFoundError:
-         return error_handler("Súbor sa nenašiel",f"Skontroluj **{blacklist_path}** v priečinku s pesničkami")
+         return error_handler("Súbor sa nenašiel",f"Skontroluj **{blacklist_file}** v priečinku s pesničkami")
 
       try:
          with open(songs_file, "r") as song_file:
@@ -259,6 +261,36 @@ def create_song_list(songs_file: str) -> tuple[discord.File, discord.Embed]:
    else:
       return error_handler("Neznáma chyba","Čo sa kurva deje?")
 
+def create_episode_list(episodes_file: str) -> tuple[discord.File, discord.Embed]:
+   try:
+      with open(episodes_file, "r") as episode_file:
+         episodes_list: list[dict] = json.load(episode_file)
+   except FileNotFoundError:
+      return error_handler("Súbor sa nenašiel",f"Skontroluj **{episodes_file}** v priečinku s pesničkami")
+
+   if 'episodes_list' in locals():
+      if not episodes_list:
+         file = discord.File(f"{images_folder}logo.png", filename="logo.png")
+         embed = discord.Embed(description=f"# Neni čo", color=0x96120F)
+         embed.set_thumbnail(url=f"attachment://logo.png")
+         embed.add_field(name="Dnes sa nám nenašla žiadna epizóda vysielaná v tento deň v minulosti.", value="", inline=False)
+         return file, embed
+
+      else:
+         file = discord.File(f"{images_folder}logo.png", filename="logo.png")
+         embed = discord.Embed(description=f"# Vysielali sme", color=0x96120F)
+         embed.set_thumbnail(url=f"attachment://logo.png")
+
+         for episode in episodes_list:
+            dt = datetime.fromisoformat(episode['Date'])
+            formatted = dt.strftime("%d.%m.%Y o %H:%M")
+            try:
+               embed.add_field(name=f"{episode['Title']}", value=formatted , inline=False)
+            except ValueError:
+               embed.add_field(name=episode, value="(neznámy formát)", inline=False)
+
+         return file, embed
+
 async def delete_message(ctx, msg_id: str):
    try:
       channel = getattr(ctx, "channel", None) or ctx
@@ -290,18 +322,18 @@ async def delete_message(ctx, msg_id: str):
    else:
       await channel.send(msg, delete_after=3)
 
-# ───────────────────────────────
-# Help command
-# ───────────────────────────────
-@tree.command(
-   name="help", 
-   description="vypíše ti manuál s možnými príkazmi", 
+# ─────────────────────────────────────────────────────────────
+# DISCORD commands
+# ─────────────────────────────────────────────────────────────
+
+@tree.command(name="help", 
+   description="vypíše ti manuál s možnými príkazmi",
    guild=guild,
 )
 @channel_only(song_channel_id)
 async def help_command(interaction: discord.Interaction):
    file = discord.File(f"{images_folder}{chuj_image}", filename=chuj_image)
-   embed = discord.Embed(title="", description="# CH.U.J v1.4", color=0x96120F)
+   embed = discord.Embed(title="", description="# CH.U.J v2.2.0", color=0x96120F)
    embed.add_field(
       name="",
       value=f"the **{update_name}** update",
@@ -313,15 +345,12 @@ async def help_command(interaction: discord.Interaction):
    embed.add_field(name="/rerun", value="pošle nových 5 pesničiek", inline=False)
    embed.add_field(name="/delete <id_spravy>", value="zmaže moju správu", inline=False)
    embed.add_field(name="/blacklist <interpret> <meno_piesne>", value="pridá pieseň na blacklist na 30 dní", inline=False)
+   embed.add_field(name="/episodes", value="pošle zoznam epizód vysielaných v rovnaký dátum predošlé roky", inline=False)
 
    await interaction.response.send_message(file=file, embed=embed)
 
-# ───────────────────────────────
-# Rerun command
-# ───────────────────────────────
-@tree.command(
-   name="rerun", 
-   description="pošle odpoveď", 
+@tree.command(name="rerun", 
+   description="pošle nových 5 pesničiek", 
    guild=guild,
 )
 @channel_only(song_channel_id)
@@ -329,31 +358,60 @@ async def rerun(interaction: discord.Interaction):
    await interaction.response.defer(thinking=True)
 
    try:
-      with open(last_message_file, "r") as f:
-         last_songs_id: str = f.read().strip()
+      with open(f"{jsons_folder}{last_message_file}", "r") as ids_file:
+         ids: dict = json.load(ids_file)
+         last_songs_id: int = ids['songs']
    except FileNotFoundError:
       file, embed = error_handler("Súbor sa nenašiel",f"Skontroluj **{last_message_file}**")
 
    if 'last_songs_id' in locals():
       if not last_songs_id:
          file, embed = error_handler("Žiadne ID správy",f"V súbore **{last_message_file}** sa nenachádza žiadne ID správy")
-      elif len(last_songs_id) > 0:
+      elif last_songs_id > 0:
          await delete_message(interaction, last_songs_id)
 
-         songs_date = datetime.datetime.now().strftime("%Y-%m-%d")
+         songs_date = datetime.now().strftime("%Y-%m-%d")
          songs_file = f"{logs_folder}{songs_folder}{songs_date}.json"
          file, embed = create_song_list(songs_file)
    
    rerun_msg = await interaction.followup.send(file=file,embed=embed)
+   ids['songs'] = rerun_msg.id
 
-   with open(last_message_file, "w") as f:
-      f.write(str(rerun_msg.id))
+   with open(f"{jsons_folder}{last_message_file}", "w") as ids_file:
+      json.dump(ids, ids_file)
 
-# ───────────────────────────────
-# Delete command
-# ───────────────────────────────
-@tree.command(
-   name="delete",
+@tree.command(name="episodes",
+   description="pošle zoznam epizód vysielaných v rovnaký dátum minule roky",
+   guild=guild,
+)
+@channel_only(song_channel_id)
+async def episodes(interaction: discord.Interaction):
+   await interaction.response.defer(thinking=True)
+   
+   try:
+      with open(f"{jsons_folder}{last_message_file}", "r") as ids_file:
+         ids: dict = json.load(ids_file)
+         last_episodes_id: int = ids['episodes']
+   except FileNotFoundError:
+      file, embed = error_handler("Súbor sa nenašiel",f"Skontroluj **{last_message_file}**")
+
+   if 'last_episodes_id' in locals():
+      if not last_episodes_id:
+         file, embed = error_handler("Žiadne ID správy",f"V súbore **{last_message_file}** sa nenachádza žiadne ID správy")
+      elif last_episodes_id > 0:
+         await delete_message(interaction, last_episodes_id)
+
+         episodes_date = datetime.now().strftime("%Y-%m-%d")
+         episodes_file = f"{logs_folder}{episodes_folder}{episodes_date}.json"
+         file, embed = create_episode_list(episodes_file)
+
+   episodes_msg = await interaction.followup.send(file=file,embed=embed)
+   ids['episodes'] = episodes_msg.id
+
+   with open(f"{jsons_folder}{last_message_file}", "w") as ids_file:
+      json.dump(ids, ids_file)
+
+@tree.command(name="delete",
    description="umožňuje ti mazať moje správy, ak sú zbytočne navyše",
    guild=guild,
 )
@@ -361,17 +419,13 @@ async def rerun(interaction: discord.Interaction):
 async def delete_command(interaction: discord.Interaction, id_spravy: str):
    await delete_message(interaction, id_spravy)
 
-# ───────────────────────────────
-# Blacklist command
-# ───────────────────────────────
-@tree.command(
-   name="blacklist",
+@tree.command(name="blacklist",
    description="pridá pieseň na blacklist na 30 dní",
    guild=guild,
 )
 @channel_only(song_channel_id)
 async def blacklist(interaction: discord.Interaction, interpret: str, meno_piesne: str):
-   today = datetime.datetime.now().strftime("%Y-%m-%d")
+   today = datetime.now().strftime("%Y-%m-%d")
    blacklist_path: str = f"{jsons_folder}{blacklist_file}"
 
    try:
@@ -393,10 +447,11 @@ async def blacklist(interaction: discord.Interaction, interpret: str, meno_piesn
 
    await interaction.response.send_message(msg, ephemeral=True)
 
-# ───────────────────────────────
-# Periodic daily rerun
-# ───────────────────────────────
-@tasks.loop(time=datetime.time(hour=12, minute=5, tzinfo=ZoneInfo("Europe/Bratislava")))
+# ─────────────────────────────────────────────────────────────
+# Periodic tasks
+# ─────────────────────────────────────────────────────────────
+
+@tasks.loop(time=time(hour=12, minute=5, tzinfo=ZoneInfo("Europe/Bratislava")))
 async def Periodic_rerun():
    channel = client.get_channel(song_channel_id)
    if not channel:
@@ -404,28 +459,60 @@ async def Periodic_rerun():
       return
 
    try:
-      with open(last_message_file, "r") as f:
-         last_songs_id = f.read().strip()
+      with open(f"{jsons_folder}{last_message_file}", "r") as ids_file:
+         ids: dict = json.load(ids_file)
+         last_songs_id: int = ids['songs']
    except FileNotFoundError:
       file, embed = error_handler("Súbor sa nenašiel",f"Skontroluj **{last_message_file}**")
 
    if last_songs_id:
       await delete_message(channel, last_songs_id)
 
-   songs_date = datetime.datetime.now().strftime("%Y-%m-%d")
+   songs_date = datetime.now().strftime("%Y-%m-%d")
    songs_file = f"{logs_folder}{songs_folder}{songs_date}.json"
    file, embed = create_song_list(songs_file)
    song_msg = await channel.send(file=file, embed=embed)
 
    try:
-      with open(last_message_file, "w") as f:
-         f.write(str(song_msg.id))
+      ids['songs'] = song_msg.id
+      with open(f"{jsons_folder}{last_message_file}", "w") as ids_file:
+         json.dump(ids, ids_file)
    except FileNotFoundError:
       error_handler("Súbor sa nenašiel",f"Skontroluj **{last_message_file}**")
 
-# ───────────────────────────────
-# Message event
-# ───────────────────────────────
+@tasks.loop(time=time(hour=12, minute=6, tzinfo=ZoneInfo("Europe/Bratislava")))
+async def Periodic_episodes():
+   channel = client.get_channel(song_channel_id)
+   if not channel:
+      print("⚠️ Channel not found.")
+      return
+
+   try:
+      with open(f"{jsons_folder}{last_message_file}", "r") as ids_file:
+         ids: dict = json.load(ids_file)
+         last_episodes_id: int = ids['episodes']
+   except FileNotFoundError:
+      file, embed = error_handler("Súbor sa nenašiel",f"Skontroluj **{last_message_file}**")
+
+   if last_episodes_id:
+      await delete_message(channel, last_episodes_id)
+
+   episodes_date = datetime.now().strftime("%Y-%m-%d")
+   episodes_file = f"{logs_folder}{episodes_folder}{episodes_date}.json"
+   file, embed = create_episode_list(episodes_file)
+   episode_msg = await channel.send(file=file, embed=embed)
+
+   try:
+      ids['episodes'] = episode_msg.id
+      with open(f"{jsons_folder}{last_message_file}", "w") as ids_file:
+         json.dump(ids, ids_file)
+   except FileNotFoundError:
+      error_handler("Súbor sa nenašiel",f"Skontroluj **{last_message_file}**")
+
+# ─────────────────────────────────────────────────────────────
+# Events
+# ─────────────────────────────────────────────────────────────
+
 @client.event
 async def on_message(message: discord.Message):
    if message.author.bot:
@@ -451,16 +538,11 @@ async def on_message(message: discord.Message):
    
       await message.channel.send(file=file, embed=embed)
 
-# ───────────────────────────────
-# Ready event
-# ───────────────────────────────
 @client.event
 async def on_ready():
    await tree.sync(guild=guild)
    print("✅ Bot is up and ready!")
    Periodic_rerun.start()
+   Periodic_episodes.start()
 
-# ───────────────────────────────
-# Run bot
-# ───────────────────────────────
 client.run(token)

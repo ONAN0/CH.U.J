@@ -1,1 +1,9 @@
+# directories
+venv
+jsons
+images
+logs
+code_snipets
+
+# files
 .env
