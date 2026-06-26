@@ -4,6 +4,7 @@ jsons
 images
 logs
 code_snipets
+__pycache__
 
 # files
 .env

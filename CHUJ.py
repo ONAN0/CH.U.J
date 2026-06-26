@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 # Load environment variables
 # ───────────────────────────────
 load_dotenv()
+update_name: str = os.getenv("UPDATE_NAME")
 # folders
 logs_folder = os.getenv("LOG_FOLDER")
 errors_folder = os.getenv("ERRORS_FOLDER")
@@ -38,18 +39,18 @@ fireworks = os.getenv("FIREWORKS")
 day_template_file = os.getenv("DAY_TEMPLATES_FILE")
 quotes_file = os.getenv("QUOTES_FILE")
 blacklist_file = os.getenv("BLACKLIST_FILE")
-
-update_name: str = os.getenv("UPDATE_NAME")
+# paths
+err_log_dir: str = f"{logs_folder}{errors_folder}"
 
 # ───────────────────────────────
 # Logging setup
 # ───────────────────────────────
-os.makedirs(f"{logs_folder}{errors_folder}", exist_ok=True)
+os.makedirs(err_log_dir, exist_ok=True)
 
 logging.basicConfig(
-   filename=f"{logs_folder}{errors_folder}{errors_file}",
+   filename=f"{err_log_dir}{errors_file}",
    level=logging.ERROR,
-   format='[ {asctime} ] [{levelname:^10s}] {message}',
+   format='[ {asctime} ] [ CHUJ.py ] [{levelname:^10s}] {message}',
    style="{",
    datefmt="%Y-%m-%d | %H:%M:%S"
 )

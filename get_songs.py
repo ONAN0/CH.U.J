@@ -2,34 +2,31 @@ import os
 import json
 from datetime import datetime
 from dotenv import load_dotenv
+from chujlib import setup_logging
 import requests
-import logging
 
 load_dotenv()
 songs_url = os.getenv("SONGS_URL")
+log_conf_file: str = os.getenv("LOG_CONF_FILE")
+
 # folders
 logs_folder = os.getenv("LOG_FOLDER")
 err_folder = os.getenv("ERRORS_FOLDER")
 songs_folder = os.getenv("SONGS_FOLDER")
 jsons_folder = os.getenv("JSONS_FOLDER")
+
 #files
 err_file = os.getenv("ERROR_FILE")
 last_song_file = os.getenv("LAST_SONG_FILE")
+
 #paths
+err_path: str = f"{logs_folder}{err_folder}{err_file}"
 songs_logs_path: str = f"{logs_folder}{songs_folder}"
-error_logs_path: str = f"{logs_folder}{err_folder}"
 last_song_path: str = f"{jsons_folder}{last_song_file}"
 
-os.makedirs(error_logs_path, exist_ok=True)
 os.makedirs(songs_logs_path, exist_ok=True)
 
-logging.basicConfig(
-   filename=f"{error_logs_path}{err_file}",
-   level=logging.ERROR,
-   format='[ {asctime} ] [ get_songs.py ] [{levelname:^9s}] {message}',
-   style="{",
-   datefmt="%Y-%m-%d | %H:%M:%S"
-)
+logger = setup_logging("get_songs_logger",log_conf_file, err_path, False)
 
 def del_duplicates(new_songs: list[dict], all_songs: list[dict] | None = None) -> list[dict]:
    all_songs = all_songs or []
@@ -54,10 +51,10 @@ def fetch_song(song_url: str) -> dict:
          if response.status_code == 200:
             break
 
-         logging.error(f"Failed request, status code: {response.status_code}")
+         logger.error(f"Failed request, status code: {response.status_code}")
 
       except requests.RequestException as exception:
-         logging.exception(f"Request failed: {exception}")
+         logger.exception(f"Request failed: {exception}")
    
    return response.json()
 
@@ -66,7 +63,7 @@ def imp_json(filepath:str) -> dict | list[dict] | None:
       with open(filepath, "r") as file:
          return json.load(file)
    except FileNotFoundError as exception:
-      logging.exception(f"File not found: {exception}")
+      logger.exception(f"File not found: {exception}")
       return None
 
 def exp_json(filepath:str, data: dict | list[dict]) -> None:
@@ -74,7 +71,7 @@ def exp_json(filepath:str, data: dict | list[dict]) -> None:
       with open(filepath, "w") as file:
          json.dump(data, file)
    except FileNotFoundError as exception:
-      logging.exception(f"File not found: {exception}")
+      logger.exception(f"File not found: {exception}")
 
 def main():
    song: dict = fetch_song(songs_url)
