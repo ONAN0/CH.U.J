@@ -33,7 +33,7 @@ The Bot's "Mind" is devided into 4 python scripts
 by using [cron](https://en.wikipedia.org/wiki/Cron) the program is being run every minute from 4:00 to 22:00
 
 ```bash
-* 4-22 * * * /path/to/env/python /path/to/get_songs.py >> ~/path/to/cron_log.txt 2>&1
+* 4-22 * * * /path/to/env/python /path/to/get_songs.py >> /path/to/cron_log.txt 2>&1
 ```
 
 ```mermaid

@@ -1,8 +1,7 @@
 import os
-import json
 from datetime import datetime
 from dotenv import load_dotenv
-from chujlib import setup_logging
+from chujlib import *
 import requests
 
 load_dotenv()
@@ -58,29 +57,18 @@ def fetch_song(song_url: str) -> dict:
    
    return response.json()
 
-def imp_json(filepath:str) -> dict | list[dict] | None:
-   try:
-      with open(filepath, "r") as file:
-         return json.load(file)
-   except FileNotFoundError as exception:
-      logger.exception(f"File not found: {exception}")
-      return None
-
-def exp_json(filepath:str, data: dict | list[dict]) -> None:
-   try:
-      with open(filepath, "w") as file:
-         json.dump(data, file)
-   except FileNotFoundError as exception:
-      logger.exception(f"File not found: {exception}")
-
 def main():
    song: dict = fetch_song(songs_url)
 
    today = datetime.now()
    songs_file: str = f"{songs_logs_path}{today.strftime('%Y-%m-%d')}.json"
 
-   if "artist" not in song or "songTitle" not in song:
-      return 0
+   song_keys = ["artist", "songTitle"]
+
+   for key in song_keys:
+      if key not in song:
+         logger.info(f'"{key}" key missing in song data.')
+         return 0
 
    if os.path.exists(last_song_path):
       last_song: dict = imp_json(last_song_path)
@@ -94,8 +82,15 @@ def main():
       existing_songs: list[dict] = imp_json(songs_file)
       items: list[dict] = del_duplicates(items, existing_songs)
    
-   exp_json(songs_file, items)
-   exp_json(last_song_path, song)
+   try:
+      exp_json(songs_file, items)
+   except Exception as exception:
+      logger.exception(exception)
+   
+   try:
+      exp_json(last_song_path, song)
+   except Exception as exception:
+      logger.exception(exception)
 
    return 0
 

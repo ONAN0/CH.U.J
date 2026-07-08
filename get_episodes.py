@@ -1,33 +1,29 @@
 import os
-import json
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from dotenv import load_dotenv
+from chujlib import *
 import requests
-import logging
 
 load_dotenv()
 episodes_url = os.getenv("EPISODES_URL")
+log_conf_file: str = os.getenv("LOG_CONF_FILE")
+
 #folders
 logs_folder = os.getenv("LOG_FOLDER")
 err_folder = os.getenv("ERRORS_FOLDER")
 episodes_folder = os.getenv("EPISODES_FOLDER")
+
 #files
 err_file = os.getenv("ERROR_FILE")
+
 #paths
-err_logs_path = f"{logs_folder}{err_folder}"
+err_path: str = f"{logs_folder}{err_folder}{err_file}"
 episodes_logs_path = f"{logs_folder}{episodes_folder}"
 
-os.makedirs(err_logs_path, exist_ok=True)
 os.makedirs(episodes_logs_path, exist_ok=True)
 
-logging.basicConfig(
-   filename=f"{err_logs_path}{err_file}",
-   level=logging.ERROR,
-   format='[ {asctime} ] [ get_episodes.py ] [{levelname:^9s}] {message}',
-   style="{",
-   datefmt="%Y-%m-%d | %H:%M:%S"
-)
+logger = setup_logging("get_episodes_logger",log_conf_file, err_path, False)
 
 def get_episodes_for_offset(today, year_offset: int = 0, month_offset: int = 0) -> list:
    
@@ -45,13 +41,6 @@ def get_episodes_for_offset(today, year_offset: int = 0, month_offset: int = 0) 
    response.raise_for_status()
 
    return response.json().get("data", [])
-
-def exp_json(filepath:str, data: dict | list[dict]) -> None:
-   try:
-      with open(filepath, "w") as file:
-         json.dump(data, file)
-   except FileNotFoundError as exception:
-      logging.exception(f"File not found: {exception}")
 
 def main():
    start_year: int = 2017
@@ -77,9 +66,12 @@ def main():
                episodes_list.extend(episodes)
 
             except requests.RequestException as exception:
-               logging.exception(f"Failed for {offset_type} {offset_value}: {exception}")
+               logger.exception(f"Failed for {offset_type} {offset_value}: {exception}")
 
-   exp_json(episodes_path, episodes_list)
+   try:
+      exp_json(episodes_path, episodes_list)
+   except Exception as exception:
+      logger.exception(exception)
 
    return 0
 

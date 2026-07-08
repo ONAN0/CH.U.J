@@ -9,7 +9,7 @@ def setup_logging(logger_name: str,
                   config_path: str, 
                   log_path: str,
                   print: bool) -> logging.Logger:
-   """sets up a basic logger
+   """Sets up a basic logger
 
    Parameters
    ----------
