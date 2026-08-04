@@ -4,56 +4,47 @@ import random
 import datetime
 from datetime import datetime, time
 import discord
-import logging
 from discord import app_commands
 from discord.ext import tasks
-from functools import wraps
-from dotenv import load_dotenv
+from functools import wraps   
 from zoneinfo import ZoneInfo
 
-# ───────────────────────────────
-# Load environment variables
-# ───────────────────────────────
-load_dotenv()
+from chujlib import *
+
 update_name: str = os.getenv("UPDATE_NAME")
+log_conf_file: str = os.getenv("LOG_CONF_FILE")
+
 # folders
 logs_folder = os.getenv("LOG_FOLDER")
-errors_folder = os.getenv("ERRORS_FOLDER")
+err_folder = os.getenv("ERRORS_FOLDER")
 songs_folder = os.getenv("SONGS_FOLDER")
 episodes_folder = os.getenv("EPISODES_FOLDER")
 images_folder = os.getenv("IMAGES_FOLDER")
 authors_folder = os.getenv("AUTHORS_FOLDER")
 days_folder = os.getenv("DAYS_FOLDER")
 jsons_folder = os.getenv("JSONS_FOLDER")
+
 # discord
 token: str = os.getenv("DISCORD_TOKEN")
 guild = discord.Object(id=int(os.getenv("SERVER_ID")))
 song_channel_id: int = int(os.getenv("SONG_CHANNEL_ID"))
+
 # files
 last_message_file = os.getenv("LAST_MESSAGE_FILE")
 glitch_image = os.getenv("GLITCH_IMAGE")
 chuj_image = os.getenv("CHUJ_IMAGE")
-errors_file = os.getenv("ERROR_FILE")
+err_file = os.getenv("ERROR_FILE")
 fireworks = os.getenv("FIREWORKS")
+
 # json
 day_template_file = os.getenv("DAY_TEMPLATES_FILE")
 quotes_file = os.getenv("QUOTES_FILE")
 blacklist_file = os.getenv("BLACKLIST_FILE")
+
 # paths
-err_log_dir: str = f"{logs_folder}{errors_folder}"
+err_path: str = f"{logs_folder}{err_folder}{err_file}"
 
-# ───────────────────────────────
-# Logging setup
-# ───────────────────────────────
-os.makedirs(err_log_dir, exist_ok=True)
-
-logging.basicConfig(
-   filename=f"{err_log_dir}{errors_file}",
-   level=logging.ERROR,
-   format='[ {asctime} ] [ CHUJ.py ] [{levelname:^10s}] {message}',
-   style="{",
-   datefmt="%Y-%m-%d | %H:%M:%S"
-)
+logger = setup_logging("CHUJ_logger",log_conf_file, err_path, 1)
 
 # ───────────────────────────────
 # Discord client setup
@@ -95,7 +86,7 @@ def error_handler(name: str, value: str) -> tuple[discord.File, discord.Embed]:
    embed.set_thumbnail(url=f"attachment://{glitch_image}")
    embed.add_field(name=name, value=value, inline=False)
 
-   logging.error(f"{name}: {value}")
+   logger.error(f"{name}: {value}")
    return file, embed
 
 def get_todays_template() -> dict | tuple[discord.File, discord.Embed]:
@@ -230,7 +221,7 @@ def create_song_list(songs_file: str) -> tuple[discord.File, discord.Embed]:
             if not list_of_songs:
                file = discord.File(f"{images_folder}{fireworks}", filename=fireworks)
                description: str = "Gratulujem :partying_face:"
-               logging.critical(f"Spustil sa ohňostroj.")
+               logger.critical(f"Spustil sa ohňostroj.")
             else:
                file = discord.File(f"{images_folder}{days_folder}{todays_template['gif']}", filename=todays_template['gif'])
                description: str = "Dnešné pesničky:"
@@ -434,7 +425,7 @@ async def blacklist(interaction: discord.Interaction, interpret: str, meno_piesn
          blacklist: list[dict] = json.load(file)
    except FileNotFoundError as e:
       msg = f"Error reading from blacklist file: {e}"
-      logging.error(msg)
+      logger.error(msg)
 
    blacklist.append({"artist":interpret, "title":meno_piesne, "timeOfBan":today})
 
@@ -444,7 +435,7 @@ async def blacklist(interaction: discord.Interaction, interpret: str, meno_piesn
       msg = f"Pieseň **{meno_piesne}** od **{interpret}** bola pridaná na blacklist"
    except Exception as e:
       msg = f"Error writing to blacklist file: {e}"
-      logging.error(msg)
+      logger.error(msg)
 
    await interaction.response.send_message(msg, ephemeral=True)
 

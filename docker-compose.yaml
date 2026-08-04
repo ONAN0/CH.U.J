@@ -1,0 +1,40 @@
+x-common: &common
+  environment:
+    - TZ=Europe/Bratislava
+  env_file: 
+    - ./.env
+  volumes:
+    - chujlib:/app/chujlib:ro
+    - chuj-data:/app/data:rw
+
+services:
+  bot:
+    <<: *common
+    build: ./bot
+
+  song-getter:
+    <<: *common
+    build: ./song-getter
+
+  episode-getter:
+    <<: *common
+    build: ./episode-getter
+
+  blacklist-checker:
+    <<: *common
+    build: ./blacklist-checker
+
+  chuj-filebrowser:
+    image: filebrowser/filebrowser:s6
+    ports:
+      - "8080:80"
+    volumes:
+      - chuj-data:/srv:rw
+      - filebrowser-db:/database:rw
+      - filebrowser-config:/config:rw
+
+volumes:
+  chujlib:
+  chuj-data:
+  filebrowser-db:
+  filebrowser-config:

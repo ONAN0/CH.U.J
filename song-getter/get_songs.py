@@ -1,10 +1,9 @@
 import os
 from datetime import datetime
-from dotenv import load_dotenv
-from chujlib import *
 import requests
 
-load_dotenv()
+from chujlib import *
+
 songs_url = os.getenv("SONGS_URL")
 log_conf_file: str = os.getenv("LOG_CONF_FILE")
 
@@ -25,7 +24,7 @@ last_song_path: str = f"{jsons_folder}{last_song_file}"
 
 os.makedirs(songs_logs_path, exist_ok=True)
 
-logger = setup_logging("get_songs_logger",log_conf_file, err_path, False)
+logger = setup_logging("get_songs_logger",log_conf_file, err_path, 1)
 
 def del_duplicates(new_songs: list[dict], all_songs: list[dict] | None = None) -> list[dict]:
    all_songs = all_songs or []
@@ -77,11 +76,12 @@ def main():
          return 0
 
    items: list[dict] = [{"time":today.strftime("%H:%M"), "artist":song["artist"], "title":song["songTitle"]}]
+   logger.info(f"At {today.strftime("%H:%M")}, {song["songTitle"]} by {song["artist"]}")
 
    if os.path.exists(songs_file):
       existing_songs: list[dict] = imp_json(songs_file)
       items: list[dict] = del_duplicates(items, existing_songs)
-   
+
    try:
       exp_json(songs_file, items)
    except Exception as exception:

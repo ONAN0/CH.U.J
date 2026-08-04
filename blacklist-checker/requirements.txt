@@ -1,4 +1,2 @@
-dotenv >= 0.9.9
 requests >= 2.34.2
-discord >= 2.3.2
 python-dateutil >= 2.9.0

@@ -33,7 +33,7 @@ The Bot's "Mind" is devided into 4 python scripts
 by using [cron](https://en.wikipedia.org/wiki/Cron) the program is being run every minute from 4:00 to 22:00
 
 ```bash
-* 4-22 * * * /path/to/env/python /path/to/get_songs.py >> /path/to/cron_log.txt 2>&1
+* 4-22 * * * /path/to/python /path/to/get_songs.py >> /path/to/cron_log.txt 2>&1
 ```
 
 ```mermaid
@@ -61,8 +61,83 @@ flowchart TB
 
 the script fetches the metadata of the current playing song, it takes the **artist** and **songTitle**, check if they're still the same as a minute ago and depending on the output log them or not
 
-# chuj
+# CHUJ
+
+CH.U.J has 5 main commands and 1 secret command:
+- [**/help**](#help)
+- [**/rerun**](#rerun)
+- [**/delete**](#delete)
+- [**/blacklist**](#blacklist)
+- [**/episodes**](#episodes)
+
+## help
+
+sends a list of possible commands
+
+## rerun
+
+sends 5 random songs
+
+## delete
+
+deletes a message created by the bot
+
+## blacklist
+
+ads the chosen song on a black list for 30 days
+
+## episodes
+
+sends the get_episodes.py log
 
 # check_blacklist
 
+the program is being run, with cron, every day at 1:00
+
+```bash
+0 1 * * * /path/to/python /path/to/get_songs.py >> /path/to/cron_log.txt 2>&1
+```
+
+```mermaid
+---
+title:
+---
+flowchart TB
+   start(("Start"))
+   import[Import blacklist file]
+   filterOut[Unban songs exceeding ban period]
+   export[Export still banned songs]
+   finish(("End"))
+
+   start --> import --> filterOut --> export --> finish
+```
+
+the script loads the content of the **song_blacklist.json** songs that exceed the **ban period** (30 days) are filtered out, the rest is still banned until the **ban period** is up
+
 # get_episodes
+
+the program is being run, with cron, every day at 2:00
+
+```bash
+0 2 * * * /path/to/python /path/to/get_songs.py >> /path/to/cron_log.txt 2>&1
+```
+
+```mermaid
+---
+title:
+---
+flowchart TB
+   start(("Start"))
+   fetch[Fetch shows]
+   export[Export shows]
+   finish(("End"))
+
+   start --> fetch --> export --> finish
+```
+
+The script fetches metadata for shows that aired on:
+
+- The same calendar date **1, 2, and 3 months ago** in the current year.
+- The **same calendar date in each previous year**, back to **2017** (the earliest year with available shows).
+
+The retrieved metadata is then logged.

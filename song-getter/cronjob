@@ -1,0 +1,1 @@
+* 4-22 * * * /usr/local/bin/python /app/get_songs.py > /proc/1/fd/1 2>/proc/1/fd/2

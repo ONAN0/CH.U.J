@@ -1,11 +1,10 @@
 import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from dotenv import load_dotenv
-from chujlib import *
 import requests
 
-load_dotenv()
+from chujlib import *
+
 episodes_url = os.getenv("EPISODES_URL")
 log_conf_file: str = os.getenv("LOG_CONF_FILE")
 
@@ -23,7 +22,7 @@ episodes_logs_path = f"{logs_folder}{episodes_folder}"
 
 os.makedirs(episodes_logs_path, exist_ok=True)
 
-logger = setup_logging("get_episodes_logger",log_conf_file, err_path, False)
+logger = setup_logging("get_episodes_logger",log_conf_file, err_path, 1)
 
 def get_episodes_for_offset(today, year_offset: int = 0, month_offset: int = 0) -> list:
    
@@ -64,6 +63,8 @@ def main():
             try:
                episodes = get_episodes_for_offset(today=today, **{offset_type: offset_value})
                episodes_list.extend(episodes)
+               if episodes:
+                  logger.info(f"{episodes[0]["Title"]}")
 
             except requests.RequestException as exception:
                logger.exception(f"Failed for {offset_type} {offset_value}: {exception}")
