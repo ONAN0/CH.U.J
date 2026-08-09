@@ -11,6 +11,7 @@ Chytrý Umelý Jednobunkovec is a custom Discord Bot for the nonprofit organizat
 | V2.0.0 | the **\"Why the f\*\*\* didn't I write this in Python from the start\"** update |
 | V2.1.0 | the **\"I hate naming things\"** update |
 | V2.2.0 | the **\"Once upon a time ...\"** update |
+| V2.3.0 | the **\"Moby-Dick\"** update |
 
 *V2.0.0 - before this version the Bot was written in Bash
 

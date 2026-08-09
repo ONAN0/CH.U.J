@@ -8,21 +8,13 @@ from chujlib import *
 episodes_url = os.getenv("EPISODES_URL")
 log_conf_file: str = os.getenv("LOG_CONF_FILE")
 
-#folders
-logs_folder = os.getenv("LOG_FOLDER")
-err_folder = os.getenv("ERRORS_FOLDER")
-episodes_folder = os.getenv("EPISODES_FOLDER")
+episodes_dir = os.getenv("EPISODES_DIR")
 
-#files
-err_file = os.getenv("ERROR_FILE")
+err_file = os.getenv("ERR_FILE")
 
-#paths
-err_path: str = f"{logs_folder}{err_folder}{err_file}"
-episodes_logs_path = f"{logs_folder}{episodes_folder}"
+os.makedirs(episodes_dir, exist_ok=True)
 
-os.makedirs(episodes_logs_path, exist_ok=True)
-
-logger = setup_logging("get_episodes_logger",log_conf_file, err_path, 1)
+logger = setup_logging("get_episodes_logger",log_conf_file, err_file, 1)
 
 def get_episodes_for_offset(today, year_offset: int = 0, month_offset: int = 0) -> list:
    
@@ -45,14 +37,14 @@ def main():
    start_year: int = 2017
    today = datetime.now()
    #today = datetime(2026,1,31)
-   year_difference: int = today.year - start_year
-   month_difference: int = 3
+   years: int = today.year - start_year
+   months: int = 3
 
-   episodes_path: str = f"{episodes_logs_path}{today.strftime('%Y-%m-%d')}.json"
+   episodes_path: str = f"{episodes_dir}{today.strftime('%Y-%m-%d')}.json"
 
    offsets = {
-      "year_offset": year_difference,
-      "month_offset": month_difference
+      "year_offset": years,
+      "month_offset": months
    }
 
    episodes_list = []

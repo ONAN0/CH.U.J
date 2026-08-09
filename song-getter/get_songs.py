@@ -7,24 +7,15 @@ from chujlib import *
 songs_url = os.getenv("SONGS_URL")
 log_conf_file: str = os.getenv("LOG_CONF_FILE")
 
-# folders
-logs_folder = os.getenv("LOG_FOLDER")
-err_folder = os.getenv("ERRORS_FOLDER")
-songs_folder = os.getenv("SONGS_FOLDER")
-jsons_folder = os.getenv("JSONS_FOLDER")
+songs_dir = os.getenv("SONGS_DIR")
+jsons_dir = os.getenv("JSONS_DIR")
 
-#files
-err_file = os.getenv("ERROR_FILE")
+err_file = os.getenv("ERR_FILE")
 last_song_file = os.getenv("LAST_SONG_FILE")
 
-#paths
-err_path: str = f"{logs_folder}{err_folder}{err_file}"
-songs_logs_path: str = f"{logs_folder}{songs_folder}"
-last_song_path: str = f"{jsons_folder}{last_song_file}"
+os.makedirs(songs_dir, exist_ok=True)
 
-os.makedirs(songs_logs_path, exist_ok=True)
-
-logger = setup_logging("get_songs_logger",log_conf_file, err_path, 1)
+logger = setup_logging("get_songs_logger",log_conf_file, err_file, 1)
 
 def del_duplicates(new_songs: list[dict], all_songs: list[dict] | None = None) -> list[dict]:
    all_songs = all_songs or []
@@ -60,7 +51,7 @@ def main():
    song: dict = fetch_song(songs_url)
 
    today = datetime.now()
-   songs_file: str = f"{songs_logs_path}{today.strftime('%Y-%m-%d')}.json"
+   songs_file: str = f"{songs_dir}{today.strftime('%Y-%m-%d')}.json"
 
    song_keys = ["artist", "songTitle"]
 
@@ -69,8 +60,8 @@ def main():
          logger.info(f'"{key}" key missing in song data.')
          return 0
 
-   if os.path.exists(last_song_path):
-      last_song: dict = imp_json(last_song_path)
+   if os.path.exists(last_song_file):
+      last_song: dict = imp_json(last_song_file)
 
       if song["artist"] == last_song["artist"] and song["songTitle"] == last_song["songTitle"]:
          return 0
@@ -88,7 +79,7 @@ def main():
       logger.exception(exception)
    
    try:
-      exp_json(last_song_path, song)
+      exp_json(last_song_file, song)
    except Exception as exception:
       logger.exception(exception)
 
